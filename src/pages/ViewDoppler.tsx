@@ -50,14 +50,6 @@ function ViewDoppler() {
     assetData?.asset?.pool?.address
   );
 
-  const { data: wethAddress } = useReadContract({
-    abi: MigratorABI,
-    address: liquidityMigrator,
-    functionName: "weth",
-  });
-
-  console.log("weth", wethAddress);
-
   const isLoading = isAssetLoading || isPositionsLoading;
   const { baseToken, quoteToken } = assetData?.asset?.pool || {};
   const positionItems = positions?.positions?.items || [];
@@ -78,7 +70,9 @@ function ViewDoppler() {
       isSellingNumeraire ? numeraireAmount : assetAmount
     );
 
-    const permit = createPermitData({
+    let permit;
+    let signature;
+    permit = createPermitData({
       isSellingNumeraire,
       amount,
       blockTimestamp: block.timestamp,
@@ -86,7 +80,7 @@ function ViewDoppler() {
       quoteTokenAddress: quoteToken.address as Address,
     });
 
-    const signature = await getPermitSignature(
+    signature = await getPermitSignature(
       permit,
       publicClient.chain.id,
       addresses.permit2,
@@ -111,7 +105,7 @@ function ViewDoppler() {
       functionName: "execute",
       args: [commands, inputs],
       account: walletClient.account,
-      value: amount,
+      value: isSellingNumeraire ? amount : undefined,
     });
 
     const txHash = await walletClient.writeContract(request);
@@ -236,11 +230,11 @@ function createPermitData({
     details: {
       token: isSellingNumeraire ? baseTokenAddress : quoteTokenAddress,
       amount,
-      expiration: blockTimestamp + 3600n,
+      expiration: blockTimestamp + 30n,
       nonce: 0n,
     },
     spender: addresses.universalRouter,
-    sigDeadline: blockTimestamp + 3600n,
+    sigDeadline: blockTimestamp + 30n,
   };
 }
 
@@ -269,11 +263,25 @@ function buildSwapCommands({
 
   const path = new SwapRouter02Encoder().encodePathExactInput(pathArray);
 
-  return new CommandBuilder()
-    .addWrapEth(addresses.universalRouter, amount)
-    .addPermit2Permit(permit, signature)
-    .addV3SwapExactIn(account, amount, 0n, path, false)
-    .build();
+  const builder = new CommandBuilder();
+  if (isSellingNumeraire) {
+    builder
+      .addPermit2Permit(permit, signature)
+      .addWrapEth(addresses.universalRouter, amount)
+      .addV3SwapExactIn(account, amount, 0n, path, false);
+  } else {
+    builder
+      .addPermit2Permit(permit, signature)
+      .addPermit2TransferFrom(
+        baseTokenAddress,
+        addresses.universalRouter,
+        amount
+      )
+      .addV3SwapExactIn(account, amount, 0n, path, false);
+  }
+  // .addUnwrapWeth(addresses.universalRouter, amount);
+
+  return builder.build();
 }
 
 function getSwapDirection(
