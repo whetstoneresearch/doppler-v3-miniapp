@@ -25,7 +25,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "doppler-router": "^1.0.1-rc0",
-    "doppler-v3-sdk": "^1.0.2-rc4",
+    "doppler-v3-sdk": "^1.0.3-rc8",
     "graphql": "^16.10.0",
     "graphql-request": "^7.1.2",
     "lucide-react": "^0.474.0",

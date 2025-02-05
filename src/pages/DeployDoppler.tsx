@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { addresses } from "../addresses";
-import { useReadContract, useAccount, useWalletClient } from "wagmi";
-import { MigratorABI } from "../abis/MigratorABI";
+import { useAccount, useWalletClient } from "wagmi";
 import { ReadWriteFactory, CreateV3PoolParams } from "doppler-v3-sdk";
 import { getDrift } from "../utils/drift";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const TICK_SPACING = 60;
+const weth = "0x4200000000000000000000000000000000000006";
 
 function roundToTickSpacing(tick: number): number {
   return Math.round(tick / TICK_SPACING) * TICK_SPACING;
@@ -39,12 +39,6 @@ function DeployDoppler() {
     liquidityMigrator,
     airlock,
   } = addresses;
-
-  const { data: weth } = useReadContract({
-    abi: MigratorABI,
-    address: addresses.liquidityMigrator,
-    functionName: "weth",
-  });
 
   const handleStartTickChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setStartTick(e.target.value);
