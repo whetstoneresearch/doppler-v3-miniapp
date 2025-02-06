@@ -245,7 +245,7 @@ function createPermitData({
   return {
     details: {
       token: isSellingNumeraire ? quoteTokenAddress : baseTokenAddress,
-      amount: BigInt(MAX_UINT160),
+      amount: amount,
       expiration: 0n,
       nonce: 0n,
     },
