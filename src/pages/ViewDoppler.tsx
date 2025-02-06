@@ -14,7 +14,7 @@ import {
   getPermitSignature,
 } from "doppler-router";
 import { universalRouterAbi } from "../abis/UniversalRouterABI";
-import { ReadQuoter } from "doppler-v3-sdk";
+import { derc20Abi, ReadQuoter } from "doppler-v3-sdk";
 import { getDrift } from "@/utils/drift";
 import { useAsset, usePositions } from "@/services/indexer";
 import {
@@ -29,6 +29,8 @@ import LiquidityChart from "../components/LiquidityChart";
 import TokenName from "../components/TokenName";
 import { addresses } from "../addresses";
 import { MigratorABI } from "@/abis/MigratorABI";
+
+const MAX_UINT160 = "0xffffffffffffffffffffffffffffffffffffffff";
 
 function ViewDoppler() {
   // Hooks and state initialization
@@ -72,22 +74,27 @@ function ViewDoppler() {
 
     let permit;
     let signature;
-    permit = createPermitData({
-      isSellingNumeraire,
-      amount,
-      blockTimestamp: block.timestamp,
-      baseTokenAddress: baseToken.address as Address,
-      quoteTokenAddress: quoteToken.address as Address,
-    });
+    if (!isSellingNumeraire) {
+      permit = createPermitData({
+        isSellingNumeraire,
+        amount,
+        blockTimestamp: block.timestamp,
+        baseTokenAddress: baseToken.address as Address,
+        quoteTokenAddress: quoteToken.address as Address,
+      });
 
-    signature = await getPermitSignature(
-      permit,
-      publicClient.chain.id,
-      addresses.permit2,
-      // @ts-ignore
-      publicClient,
-      walletClient
-    );
+      signature = await getPermitSignature(
+        permit,
+        publicClient.chain.id,
+        addresses.permit2,
+        // @ts-ignore
+        publicClient,
+        walletClient
+      );
+    }
+
+    console.log("permit", permit);
+    console.log("signature", signature);
 
     const [commands, inputs] = buildSwapCommands({
       isSellingNumeraire,
@@ -98,6 +105,15 @@ function ViewDoppler() {
       quoteTokenAddress: quoteToken.address as Address,
       account: account.address,
     });
+
+    // const tx = await walletClient.writeContract({
+    //   address: universalRouter,
+    //   abi: universalRouterAbi,
+    //   functionName: "execute",
+    //   args: [commands, inputs],
+    //   account: walletClient.account,
+    //   value: isSellingNumeraire ? amount : undefined,
+    // });
 
     const { request } = await publicClient.simulateContract({
       address: universalRouter,
@@ -228,13 +244,13 @@ function createPermitData({
 }): PermitSingle {
   return {
     details: {
-      token: isSellingNumeraire ? baseTokenAddress : quoteTokenAddress,
-      amount,
-      expiration: blockTimestamp + 30n,
+      token: isSellingNumeraire ? quoteTokenAddress : baseTokenAddress,
+      amount: BigInt(MAX_UINT160),
+      expiration: 0n,
       nonce: 0n,
     },
     spender: addresses.universalRouter,
-    sigDeadline: blockTimestamp + 30n,
+    sigDeadline: blockTimestamp + 3600n,
   };
 }
 
@@ -249,8 +265,8 @@ function buildSwapCommands({
 }: {
   isSellingNumeraire: boolean;
   amount: bigint;
-  permit: PermitSingle;
-  signature: Hex;
+  permit?: PermitSingle;
+  signature?: Hex;
   baseTokenAddress: Address;
   quoteTokenAddress: Address;
   account: Address;
@@ -261,25 +277,20 @@ function buildSwapCommands({
     ? [baseTokenAddress, quoteTokenAddress]
     : [quoteTokenAddress, baseTokenAddress];
 
+  console.log("pathArray", pathArray);
+
   const path = new SwapRouter02Encoder().encodePathExactInput(pathArray);
 
   const builder = new CommandBuilder();
-  if (isSellingNumeraire) {
+  if (!isSellingNumeraire && permit && signature) {
     builder
       .addPermit2Permit(permit, signature)
-      .addWrapEth(addresses.universalRouter, amount)
-      .addV3SwapExactIn(account, amount, 0n, path, false);
+      .addV3SwapExactIn(account, amount, 0n, path, true);
   } else {
     builder
-      .addPermit2Permit(permit, signature)
-      .addPermit2TransferFrom(
-        baseTokenAddress,
-        addresses.universalRouter,
-        amount
-      )
+      .addWrapEth(addresses.universalRouter, amount)
       .addV3SwapExactIn(account, amount, 0n, path, false);
   }
-  // .addUnwrapWeth(addresses.universalRouter, amount);
 
   return builder.build();
 }
