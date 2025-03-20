@@ -9,9 +9,12 @@ import { useAssets } from "@/services/indexer";
 // import { useState } from "react";
 
 function HomePage() {
-  const { data: assets, isLoading: isAssetsLoading } = useAssets(
+  const { data: assets, error: assetsError, isLoading: isAssetsLoading } = useAssets(
     addresses.v3Initializer
   );
+
+  console.log(assetsError);
+  console.log(assets);
 
   const getRandom24HChange = () => {
     const change = (Math.random() * 20 - 10).toFixed(2); // Random between -10% and +10%
@@ -20,8 +23,6 @@ function HomePage() {
       isPositive: parseFloat(change) > 0,
     };
   };
-
-  console.log(assets);
 
   return (
     <div className="home-page p-6 max-w-6xl mx-auto">

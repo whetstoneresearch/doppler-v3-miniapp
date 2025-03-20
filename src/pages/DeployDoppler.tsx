@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const TICK_SPACING = 60;
+const TICK_SPACING = 200;
 const weth = "0x4200000000000000000000000000000000000006";
 
 function roundToTickSpacing(tick: number): number {
