@@ -60,3 +60,7 @@ The application will be available at `http://localhost:5173`
   - `utils/` - Utility functions
   - `types/` - TypeScript type definitions
   - `graphql/` - GraphQL queries and mutations
+
+## License
+
+[MIT](/LICENSE)
