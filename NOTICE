@@ -1,0 +1,16 @@
+NOTICE
+
+This software is released under the MIT License. See the [LICENSE](/LICENSE) file for full terms.
+
+Third-Party Components and Licenses:
+
+This project includes third-party software that is licensed under terms different from the MIT License:
+
+- Doppler 
+   - Source: https://github.com/whetstoneresearch/doppler   
+   - License: Business Source License (BSL) Version [1.1]  
+   - License File: See `https://github.com/whetstoneresearch/doppler/blob/main/LICENSE` for full license text.  
+
+This means the library has some usage restrictions until a specific future date, after which it becomes open source. 
+
+Please refer to the Doppler license for more information.
