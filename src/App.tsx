@@ -31,11 +31,11 @@ function App() {
     disconnect();
   };
 
-  const isUniSepolia = account.chain?.id === 1301;
+  const isBaseSepolia = account.chain?.id === 84532;
 
   const handleSwitchNetwork = () => {
     if (switchChain) {
-      switchChain({ chainId: 1301 });
+      switchChain({ chainId: 84532 });
     }
   };
 
@@ -86,11 +86,11 @@ function App() {
           </div>
         </nav>
 
-        {account.status === "connected" && !isUniSepolia && (
+        {account.status === "connected" && !isBaseSepolia && (
           <div className="flex-1 flex items-center justify-center bg-background/80 backdrop-blur">
             <Card className="p-6 flex flex-col items-center gap-4">
               <p className="text-lg">
-                Please switch to UniChain Sepolia network
+                Please switch to Base Sepolia network
               </p>
               <Button onClick={handleSwitchNetwork}>Switch Network</Button>
             </Card>
