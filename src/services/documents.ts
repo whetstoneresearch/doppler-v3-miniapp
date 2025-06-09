@@ -127,3 +127,60 @@ export const AssetDocument = graphql(`
     }
   }
 `);
+
+export const PoolsDocument = graphql(`
+  query Pools(
+    $orderBy: String
+    $orderDirection: String
+    $limit: Int
+    $where: poolFilter 
+  ) {
+    pools(
+      orderBy: $orderBy
+      orderDirection: $orderDirection
+      limit: $limit
+      where: $where
+    ) {
+      items {
+      address
+      chainId
+      tick
+      sqrtPrice
+      liquidity
+      createdAt
+      asset {
+        marketCapUsd
+      }
+      baseToken {
+        address
+        name
+        symbol
+      }
+      quoteToken {
+        address
+        name
+        symbol
+      }
+      price
+      fee
+      type
+      dollarLiquidity
+      dailyVolume {
+        volumeUsd
+      }
+      volumeUsd
+      percentDayChange
+      totalFee0
+      totalFee1
+      graduationThreshold
+      graduationBalance
+      isToken0
+      lastRefreshed
+      lastSwapTimestamp
+      reserves0
+      reserves1
+      marketCapUsd
+      }
+    }
+  }
+`);

@@ -1,20 +1,16 @@
 import { Link } from "react-router-dom";
-import { addresses } from "../addresses";
 import TokenName from "../components/TokenName";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { useAssets } from "@/services/indexer";
+import { usePools } from "@/services/indexer";
 // import { useState } from "react";
 
 function HomePage() {
-  const { data: assets, error: assetsError, isLoading: isAssetsLoading } = useAssets(
-    addresses.v3Initializer
-  );
-
-  console.log(assetsError);
-  console.log(assets);
+  const { data: pools, error: poolsError, isLoading: isPoolsLoading } =
+    usePools("createdAt", "desc", 10, { chainId: "84532", type: "v3" });
+  console.log("pools", pools, poolsError, isPoolsLoading);
 
   const getRandom24HChange = () => {
     const change = (Math.random() * 20 - 10).toFixed(2); // Random between -10% and +10%
@@ -31,13 +27,13 @@ function HomePage() {
           <h2 className="text-2xl font-bold">Explore</h2>
           <Separator />
 
-          {isAssetsLoading ? (
+          {isPoolsLoading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : assets?.assets?.items?.length === 0 ? (
+          ) : pools?.pools?.items?.length === 0 ? (
             <div className="flex flex-col items-center gap-4 py-8">
               <p className="text-muted-foreground">No markets found</p>
               <Button asChild>
@@ -60,30 +56,30 @@ function HomePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {assets?.assets?.items?.map((asset) => {
+                  {pools?.pools?.items?.map((pool) => {
                     const change = getRandom24HChange();
                     return (
                       <tr
-                        key={asset?.pool?.baseToken?.address}
+                        key={pool?.baseToken?.address}
                         className="border-t"
                       >
                         <td className="p-4">
                           <Link
-                            to={`/doppler/${asset?.pool?.baseToken?.address}`}
+                            to={`/doppler/${pool?.baseToken?.address}`}
                             className="block hover:bg-muted/50 transition-colors"
                           >
                             <div className="flex items-center gap-3">
                               <TokenName
-                                name={asset?.pool?.baseToken?.name || ""}
-                                symbol={asset?.pool?.baseToken?.symbol || ""}
+                                name={pool?.baseToken?.name || ""}
+                                symbol={pool?.baseToken?.symbol || ""}
                                 showSymbol={false}
                               />
                               <div>
                                 <div className="font-medium">
-                                  {asset?.pool?.baseToken?.symbol}
+                                  {pool?.baseToken?.symbol}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  {asset?.pool?.baseToken?.name}
+                                  {pool?.baseToken?.name}
                                 </div>
                               </div>
                             </div>
