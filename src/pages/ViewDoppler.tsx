@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   useAccount,
   usePublicClient,
-  useReadContract,
   useWalletClient,
 } from "wagmi";
 import { Address, formatEther, Hex, parseEther } from "viem";
@@ -14,7 +13,7 @@ import {
   getPermitSignature,
 } from "doppler-router";
 import { universalRouterAbi } from "../abis/UniversalRouterABI";
-import { derc20Abi, ReadQuoter } from "doppler-v3-sdk";
+import { ReadQuoter } from "doppler-v3-sdk";
 import { getDrift } from "@/utils/drift";
 import { useAsset, usePositions } from "@/services/indexer";
 import {
@@ -28,9 +27,7 @@ import {
 import LiquidityChart from "../components/LiquidityChart";
 import TokenName from "../components/TokenName";
 import { addresses } from "../addresses";
-import { MigratorABI } from "@/abis/MigratorABI";
 
-const MAX_UINT160 = "0xffffffffffffffffffffffffffffffffffffffff";
 
 function ViewDoppler() {
   // Hooks and state initialization
@@ -160,7 +157,7 @@ function ViewDoppler() {
         return;
       }
 
-      const { amountOut } = await quoter.quoteExactInput({
+      const { amountOut } = await quoter.quoteExactInputV3({
         tokenIn,
         tokenOut,
         amountIn: inputValueInWei,
