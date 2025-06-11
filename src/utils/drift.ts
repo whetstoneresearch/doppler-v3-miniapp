@@ -6,6 +6,5 @@ import { WalletClient } from "viem";
 
 export function getDrift(walletClient?: WalletClient): Drift {
   const publicClient = getPublicClient(config);
-  // @ts-ignore
   return createDrift({ adapter: viemAdapter({ publicClient, walletClient }) });
 }

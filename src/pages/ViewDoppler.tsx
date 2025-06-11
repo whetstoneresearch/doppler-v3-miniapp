@@ -5,7 +5,7 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { Address, formatEther, Hex, parseEther } from "viem";
+import { Address, formatEther, Hex, parseEther, zeroAddress } from "viem";
 import {
   PermitSingle,
   SwapRouter02Encoder,
@@ -36,9 +36,8 @@ function ViewDoppler() {
   const { data: walletClient } = useWalletClient(account);
   const publicClient = usePublicClient();
   const { universalRouter, quoterV2 } = addresses;
-  const drift = getDrift();
-  const quoter = new ReadQuoter(quoterV2, drift);
-  const { liquidityMigrator } = addresses;
+  const drift = getDrift(walletClient);
+  const quoter = new ReadQuoter(quoterV2, zeroAddress, drift);
 
   // Validation and data fetching
   const isValidAddress = id?.match(/^0x[a-fA-F0-9]{40}$/);
@@ -161,9 +160,10 @@ function ViewDoppler() {
         tokenIn,
         tokenOut,
         amountIn: inputValueInWei,
-        fee: 3000,
+        fee: 10000,
         sqrtPriceLimitX96: 0n,
       });
+
 
       const formattedAmount = Number(formatEther(amountOut)).toFixed(4);
       setSwapState((prev) => ({
@@ -274,9 +274,8 @@ function buildSwapCommands({
     ? [baseTokenAddress, quoteTokenAddress]
     : [quoteTokenAddress, baseTokenAddress];
 
-  console.log("pathArray", pathArray);
 
-  const path = new SwapRouter02Encoder().encodePathExactInput(pathArray);
+  const path = new SwapRouter02Encoder().encodePath(pathArray, 10000);
 
   const builder = new CommandBuilder();
   if (!isSellingNumeraire && permit && signature) {
@@ -288,6 +287,8 @@ function buildSwapCommands({
       .addWrapEth(addresses.universalRouter, amount)
       .addV3SwapExactIn(account, amount, 0n, path, false);
   }
+
+  console.log("builder", builder);
 
   return builder.build();
 }
