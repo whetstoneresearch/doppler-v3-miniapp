@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Address, zeroAddress } from "viem";
 import { ReadDerc20, ReadFactory } from "doppler-v3-sdk";
 import { getDrift } from "../utils/drift";
+import { baseSepolia } from "viem/chains";
 
 export type PoolQueryResult = {
   data: PoolData[] | undefined;
@@ -38,7 +39,7 @@ export interface PoolCreationData {
 }
 
 const getCreationData = async (airlock: Address) => {
-  const drift = getDrift();
+  const drift = getDrift(baseSepolia);
   const readFactory = new ReadFactory(airlock, drift);
   const logs = await readFactory.getCreateEvents({
     fromBlock: 0n,

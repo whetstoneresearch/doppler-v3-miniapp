@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Address } from "viem";
+import { Address, parseEther } from "viem";
 import {
   AssetData,
   ReadUniswapV3Pool,
@@ -11,6 +11,7 @@ import {
 import { getDrift } from "../utils/drift";
 import { useAssetData } from "./useMarketDetails";
 import { useTokenData } from "./useToken";
+import { baseSepolia } from "viem/chains";
 
 interface PoolData {
   poolBalance: bigint;
@@ -42,7 +43,7 @@ const fetchPositionData = async (
     throw "Asset address not found";
   }
 
-  const drift = getDrift();
+  const drift = getDrift(baseSepolia);
   const pool = new ReadUniswapV3Pool(assetData.pool, drift);
   const initializer = new ReadUniswapV3Initializer(initializerAddress, drift);
   const asset = new ReadDerc20(assetAddress, drift);
@@ -66,7 +67,11 @@ const fetchPositionData = async (
 
   return {
     poolBalance,
-    initializerState,
+    // TODO: fix og types
+    initializerState: {
+      ...initializerState,
+      maxShareToBond: parseEther("0.35"),
+    },
     slot0,
     positions,
   };
