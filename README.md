@@ -2,6 +2,13 @@
 
 A React-based mini application built with Vite, TypeScript, and Tailwind CSS. This project provides an easy to get started with UI for interacting with the [Doppler liquidity bootstrapping protocol](https://docs.doppler.lol/).
 
+## Quick Start
+```bash
+cp .env.example .env.local && \
+bun install && \
+bun dev
+```
+
 ## Tech Stack
 
 - React 
