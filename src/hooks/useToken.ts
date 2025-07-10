@@ -5,6 +5,7 @@ import { getDrift } from "../utils/drift";
 import { TokenData } from "../types";
 import { INDEXER_URL } from "../services/indexer";
 import { gql, request } from "graphql-request";
+import { base } from "viem/chains";
 
 export const fetchDerc20TokenData = async (
   address: Address | undefined
@@ -14,7 +15,7 @@ export const fetchDerc20TokenData = async (
   }
 
   try {
-    const drift = getDrift();
+    const drift = getDrift(base);
     const token = new ReadDerc20(address, drift);
 
     const [name, symbol, decimals, totalSupply] = await Promise.all([

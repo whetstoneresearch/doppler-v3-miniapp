@@ -27,6 +27,7 @@ import {
 import LiquidityChart from "../components/LiquidityChart";
 import TokenName from "../components/TokenName";
 import { addresses } from "../addresses";
+import { base } from "viem/chains";
 
 
 function ViewDoppler() {
@@ -36,7 +37,7 @@ function ViewDoppler() {
   const { data: walletClient } = useWalletClient(account);
   const publicClient = usePublicClient();
   const { universalRouter, quoterV2 } = addresses;
-  const drift = getDrift(walletClient);
+  const drift = getDrift(base, walletClient);
   const quoter = new ReadQuoter(quoterV2, zeroAddress, drift);
 
   // Validation and data fetching

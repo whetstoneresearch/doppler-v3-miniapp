@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Address } from "viem";
 import { AssetData, ReadFactory } from "doppler-v3-sdk";
 import { getDrift } from "../utils/drift";
-import { Drift, ReadAdapter } from "@delvtech/drift";
+import { base } from "viem/chains";
 
 export const fetchAssetData = async (
   airlock: Address | undefined,
@@ -12,8 +12,8 @@ export const fetchAssetData = async (
     throw "Airlock or asset address is undefined";
   }
 
-  const drift = getDrift();
-  const readFactory = new ReadFactory(airlock, drift as Drift<ReadAdapter>);
+  const drift = getDrift(base);
+  const readFactory = new ReadFactory(airlock, drift);
   const assetData = await readFactory.getAssetData(assetAddress);
 
   return assetData;
