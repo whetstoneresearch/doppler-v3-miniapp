@@ -148,9 +148,6 @@ export const PoolsDocument = graphql(`
       sqrtPrice
       liquidity
       createdAt
-      asset {
-        marketCapUsd
-      }
       baseToken {
         address
         name
@@ -170,10 +167,6 @@ export const PoolsDocument = graphql(`
       }
       volumeUsd
       percentDayChange
-      totalFee0
-      totalFee1
-      graduationThreshold
-      graduationBalance
       isToken0
       lastRefreshed
       lastSwapTimestamp

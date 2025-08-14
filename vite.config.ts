@@ -11,4 +11,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/ponder": {
+        target: "http://localhost:42069",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (p) => p.replace(/^\/ponder/, ""),
+      },
+    },
+  },
 });
