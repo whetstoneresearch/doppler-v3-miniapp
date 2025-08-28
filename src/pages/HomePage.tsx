@@ -13,7 +13,7 @@ import { formatEther } from "viem";
 function HomePage() {
   const client = createClient(
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-    (import.meta as any).env?.VITE_PONDER_SQL || "https://add-15-min-ohlc-buckets-doppler-sdk-s1ck.marble.live/sql"
+    (import.meta as any).env?.VITE_PONDER_SQL || "https://doppler-zora-multichain.marble.live/sql"
   );
 
   const [sortBy, setSortBy] = useState<"percentChangeUsd" | "volumeUsd">(
@@ -33,58 +33,140 @@ function HomePage() {
 
       const mostRecentMinuteIdResult = mostRecentMinuteId?.[0]?.minuteId;
 
+      // const cutoff = mostRecentMinuteIdResult - 86400;
+
+      // const percentChangeExpr = sql`
+      //   ((c.close - o.open)::double precision) / NULLIF(o.open, 0)::double precision
+      // `;
+
+      // const pools = await db
+      //   .select({
+      //     pool: sql`agg.pool`,
+      //     chainId: sql`agg.chainId`,
+      //     percentChangeUsd: percentChangeExpr.as("percentChange"),
+      //     volumeUsd: sql`agg.volume_24h`.as("volume"),
+      //     dollarLiquidity: schema.pool.dollarLiquidity,
+      //     marketCapUsd: schema.pool.marketCapUsd,
+      //     holderCount: schema.pool.holderCount,
+      //     baseTokenName: schema.token.name,
+      //     baseTokenSymbol: schema.token.symbol,
+      //     createdAt: schema.pool.createdAt,
+      //     open: sql`o.open`,
+      //     close: sql`c.close`,
+      //     openTimestamp: sql`agg.openMinuteId`,
+      //     closeTimestamp: sql`agg.closeMinuteId`,
+      //   })
+      //   .from(sql`
+      //     (
+      //       SELECT
+      //         ${schema.fifteenMinuteBucketUsd.pool}   AS pool,
+      //         ${schema.fifteenMinuteBucketUsd.chainId} AS chainId,
+      //         MIN(${schema.fifteenMinuteBucketUsd.minuteId}) AS openMinuteId,
+      //         MAX(${schema.fifteenMinuteBucketUsd.minuteId}) AS closeMinuteId,
+      //         SUM(${schema.fifteenMinuteBucketUsd.volumeUsd}) AS volume_24h
+      //       FROM ${schema.fifteenMinuteBucketUsd}
+      //       INNER JOIN ${schema.pool}
+      //         ON ${schema.pool.address} = ${schema.fifteenMinuteBucketUsd.pool}
+      //        AND ${schema.pool.chainId} = ${schema.fifteenMinuteBucketUsd.chainId}
+      //       WHERE ${schema.fifteenMinuteBucketUsd.minuteId} > ${cutoff}
+      //         AND ${schema.fifteenMinuteBucketUsd.volumeUsd} > 0
+      //         AND ${schema.pool.type} = 'zora'
+      //       GROUP BY ${schema.fifteenMinuteBucketUsd.pool}, ${schema.fifteenMinuteBucketUsd.chainId}
+      //     ) agg
+      //   `)
+      //   // Point lookups for the two boundary rows (fast via PK on (address, minuteId, chainId))
+      //   .innerJoin(
+      //     sql`${schema.fifteenMinuteBucketUsd} o`,
+      //     sql`${schema.fifteenMinuteBucketUsd.pool} = agg.pool AND ${schema.fifteenMinuteBucketUsd.chainId} = agg.chainId AND ${schema.fifteenMinuteBucketUsd.minuteId} = agg.openMinuteId`
+      //   )
+      //   .innerJoin(
+      //     sql`${schema.fifteenMinuteBucketUsd} c`,
+      //     sql`${schema.fifteenMinuteBucketUsd.pool} = agg.pool AND ${schema.fifteenMinuteBucketUsd.chainId} = agg.chainId AND ${schema.fifteenMinuteBucketUsd.minuteId} = agg.closeMinuteId`
+      //   )
+      //   .innerJoin(schema.pool, sql`${schema.pool.address} = agg.pool AND ${schema.pool.chainId} = agg.chainId`)
+      //   .innerJoin(schema.token, sql`${schema.token.address} = ${schema.pool.baseToken}`)
+      //   .where(sql`(agg.closeMinuteId - agg.openMinuteId) BETWEEN 0 AND 86400`)
+      //   .orderBy(
+      //     sortBy === "percentChangeUsd"
+      //       ? sql`"percentChange" DESC`
+      //       : sql`agg.volume_24h DESC`
+      //   )
+      //   .limit(25);
+
+      const cutoff = mostRecentMinuteIdResult - 86400;
+      const percentChangeExpr = sql`((cur.close - ref.open)::double precision) / NULLIF(ref.open, 0)::double precision`;
+
       const pools = await db
         .select({
-          pool: schema.fifteenMinuteBucketUsd.pool,
-          volumeUsd: sql`SUM(${schema.fifteenMinuteBucketUsd.volumeUsd})`.as("volume"),
-          chainId: schema.fifteenMinuteBucketUsd.chainId,
+          pool: sql`cur.pool`,
+          chainId: sql`cur.chainId`,
+          percentChangeUsd: percentChangeExpr.as("percentChange"),
+          volumeUsd: sql`COALESCE(vol.volume_24h, 0)`.as("volume"),
           dollarLiquidity: schema.pool.dollarLiquidity,
           marketCapUsd: schema.pool.marketCapUsd,
           holderCount: schema.pool.holderCount,
           baseTokenName: schema.token.name,
           baseTokenSymbol: schema.token.symbol,
+          createdAt: schema.pool.createdAt,
+          baseTokenAddress: schema.pool.baseToken,
+          open: sql`ref.open`,
+          close: sql`cur.close`,
+          openTimestamp: sql`ref.openMinuteId`,
+          closeTimestamp: sql`cur.closeMinuteId`,
         })
-        .from(schema.fifteenMinuteBucketUsd)
-        .where(sql`${schema.fifteenMinuteBucketUsd.minuteId} > ${mostRecentMinuteIdResult - 86400}`)
+        .from(sql`
+          (
+            SELECT DISTINCT ON (${schema.fifteenMinuteBucketUsd.pool}, ${schema.fifteenMinuteBucketUsd.chainId})
+              ${schema.fifteenMinuteBucketUsd.pool} AS pool,
+              ${schema.fifteenMinuteBucketUsd.chainId} AS chainId,
+              ${schema.fifteenMinuteBucketUsd.minuteId} AS closeMinuteId,
+              ${schema.fifteenMinuteBucketUsd.close} AS close
+            FROM ${schema.fifteenMinuteBucketUsd}
+            WHERE ${schema.fifteenMinuteBucketUsd.minuteId} > ${cutoff} AND ${schema.fifteenMinuteBucketUsd.volumeUsd} > 0
+            ORDER BY ${schema.fifteenMinuteBucketUsd.pool}, ${schema.fifteenMinuteBucketUsd.chainId}, ${schema.fifteenMinuteBucketUsd.minuteId} DESC
+          ) cur
+        `)
         .innerJoin(
-          schema.pool,
-          sql`${schema.fifteenMinuteBucketUsd.pool} = ${schema.pool.address} AND ${schema.fifteenMinuteBucketUsd.chainId} = ${schema.pool.chainId}`
+          sql`
+            (
+              SELECT DISTINCT ON (${schema.fifteenMinuteBucketUsd.pool}, ${schema.fifteenMinuteBucketUsd.chainId})
+                ${schema.fifteenMinuteBucketUsd.pool} AS pool,
+                ${schema.fifteenMinuteBucketUsd.chainId} AS chainId,
+                ${schema.fifteenMinuteBucketUsd.minuteId} AS openMinuteId,
+                ${schema.fifteenMinuteBucketUsd.open} AS open
+              FROM ${schema.fifteenMinuteBucketUsd}
+              WHERE ${schema.fifteenMinuteBucketUsd.minuteId} > ${cutoff} AND ${schema.fifteenMinuteBucketUsd.volumeUsd} > 0
+              ORDER BY ${schema.fifteenMinuteBucketUsd.pool}, ${schema.fifteenMinuteBucketUsd.chainId}, ${schema.fifteenMinuteBucketUsd.minuteId} ASC
+            ) ref
+          `,
+          sql`cur.pool = ref.pool AND cur.chainId = ref.chainId`
         )
         .innerJoin(
-          schema.token,
-          sql`${schema.token.address} = ${schema.pool.baseToken}`
+          sql`
+            (
+              SELECT
+                ${schema.fifteenMinuteBucketUsd.pool} AS pool,
+                ${schema.fifteenMinuteBucketUsd.chainId} AS chainId,
+                SUM(${schema.fifteenMinuteBucketUsd.volumeUsd}) AS volume_24h
+              FROM ${schema.fifteenMinuteBucketUsd}
+              WHERE ${schema.fifteenMinuteBucketUsd.minuteId} > ${cutoff} AND ${schema.fifteenMinuteBucketUsd.volumeUsd} > 0
+              GROUP BY ${schema.fifteenMinuteBucketUsd.pool}, ${schema.fifteenMinuteBucketUsd.chainId}
+            ) vol
+          `,
+          sql`vol.pool = cur.pool AND vol.chainId = cur.chainId`
         )
-        .groupBy(
-          schema.fifteenMinuteBucketUsd.pool,
-          schema.fifteenMinuteBucketUsd.chainId,
-          schema.pool.dollarLiquidity,
-          schema.pool.marketCapUsd,
-          schema.pool.holderCount,
-          schema.token.name,
-          schema.token.symbol,
+        .innerJoin(schema.pool, sql`cur.pool = ${schema.pool.address} AND cur.chainId = ${schema.pool.chainId}`)
+        .innerJoin(schema.token, sql`${schema.token.address} = ${schema.pool.baseToken}`)
+        .where(sql`
+          ${percentChangeExpr} > 0
+          AND ${schema.pool.type} = 'zora'`
         )
-        .orderBy(sql`volume desc`)
+        .orderBy(sql`${percentChangeExpr} DESC`)
         .limit(25);
 
-      // const pools = await db
-      //   .select({
-      //     address: schema.pool.address,
-      //     chainId: schema.pool.chainId,
-      //     marketCapUsd: schema.pool.marketCapUsd,
-      //     dollarLiquidity: schema.pool.dollarLiquidity,
-      //     holderCount: schema.pool.holderCount,
-      //     baseToken: schema.pool.baseToken,
-      //     type: schema.pool.type,
-      //     baseTokenName: schema.token.name,
-      //     baseTokenSymbol: schema.token.symbol,
-      //   })
-      //   .from(schema.pool)
-      //   .orderBy(sql`${schema.pool.marketCapUsd} desc`)
-      //   .where(sql`${schema.pool.marketCapUsd} > 0 AND ${schema.pool.holderCount} > 100 AND ${schema.pool.type} = 'zora'`)
-      //   .innerJoin(schema.token, sql`${schema.token.address} = ${schema.pool.baseToken}`)
-      //   .limit(25);
+        console.log("pools", pools);
 
-        console.log(pools);
+
 
         return pools;
     }
@@ -176,9 +258,9 @@ function HomePage() {
                         </td>
                         <td className="text-right p-4">${Number(formatEther(pool.marketCapUsd)).toFixed(2)}</td>
                         <td className={`text-right p-4 ${isPositive ? "text-green-500" : "text-red-500"}`}>
-                          {changeValue.toFixed(2)}%
+                          {(changeValue * 100).toFixed(2)}%
                         </td>
-                        <td className="text-right p-4">2 days</td>
+                        <td className="text-right p-4">{Number(pool.createdAt)}</td>
                         <td className="text-right p-4">{pool.holderCount}</td>
                         <td className="text-right p-4">${Number(formatEther(pool.volumeUsd ?? 0n)).toFixed(2)}</td>
                         <td className="text-right p-4">${Number(formatEther(pool.dollarLiquidity)).toFixed(2)}</td>
