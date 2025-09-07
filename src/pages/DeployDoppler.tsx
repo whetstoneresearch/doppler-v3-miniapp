@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { baseSepolia } from "viem/chains";
 
 const TICK_SPACING = 200;
 const weth = "0x4200000000000000000000000000000000000006";
@@ -124,7 +125,9 @@ function DeployDoppler() {
         vestingConfig: "default",
       };
 
-      const drift = getDrift(walletClient);
+      const drift = getDrift(baseSepolia, walletClient);
+
+      // TODO: ReadWriteFactory types need to be fixed
       // @ts-ignore
       const rwFactory = new ReadWriteFactory(airlock, drift);
       const createData = await rwFactory.encodeCreateData(createV3PoolParams);
