@@ -2,6 +2,12 @@
 
 A React-based mini application built with Vite, TypeScript, and Tailwind CSS. This project provides an easy to get started with UI for interacting with the [Doppler liquidity bootstrapping protocol](https://docs.doppler.lol/).
 
+## Status
+
+This repository is no longer maintained 🚨 
+
+View the [Doppler Demo App](https://github.com/whetstoneresearch/doppler-demo-app) which uses the latest [Doppler SDK](https://github.com/whetstoneresearch/doppler-sdk).
+
 ## Tech Stack
 
 - React 
